@@ -3,7 +3,10 @@ import express, { type Express } from 'express'
 import helmet from 'helmet'
 import { errorHandler } from './middleware/errorHandler.js'
 import { notFoundHandler } from './middleware/notFoundHandler.js'
+import { categoriesRouter } from './routes/categories.routes.js'
+import { groupsRouter } from './routes/groups.routes.js'
 import { healthRouter } from './routes/health.routes.js'
+import { peopleRouter } from './routes/people.routes.js'
 
 export function createApp(): Express {
   const app = express()
@@ -13,6 +16,9 @@ export function createApp(): Express {
   app.use(express.json())
 
   app.use('/api', healthRouter)
+  app.use('/api/groups/:groupId/people', peopleRouter)
+  app.use('/api/groups/:groupId/categories', categoriesRouter)
+  app.use('/api/groups', groupsRouter)
 
   app.use(notFoundHandler)
   app.use(errorHandler)
