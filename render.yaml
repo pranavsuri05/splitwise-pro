@@ -1,0 +1,66 @@
+# Render Blueprint for Splitwise Pro — Phase 6 deployment.
+#
+# Architecture (locked — see docs/ and the Phase 6 deployment audit):
+#
+#   GitHub (private repo)
+#     -> Render Free Static Site   ("splitwise-pro-client" below)
+#     -> Render Free Web Service   ("splitwise-pro-server" below)
+#     -> existing Supabase Free PostgreSQL (external; DATABASE_URL only —
+#        this blueprint does NOT provision a Render Postgres database)
+#
+# Both services build from the repo root (rootDir: .), not a client/ or
+# server/ subdirectory, because this is an npm-workspaces monorepo with a
+# single root package-lock.json — building from a subdirectory would bypass
+# that lockfile.
+#
+# Every env var below is `sync: false`: this file never carries a secret or
+# a deployment-specific value. Set each one directly in the Render dashboard
+# after the blueprint is applied — never commit real values here.
+
+services:
+  # Render Free Web Service — the Express API.
+  - type: web
+    name: splitwise-pro-server
+    env: node
+    plan: free
+    rootDir: .
+    buildCommand: npm ci && npm run build --workspace server
+    startCommand: npm run start --workspace server
+    healthCheckPath: /api/health
+    envVars:
+      # Existing Supabase Free PostgreSQL project — its Session Pooler
+      # connection string (not the Transaction Pooler: this is a persistent
+      # long-running process, not a serverless runtime).
+      - key: DATABASE_URL
+        sync: false
+      # bcrypt hash of the shared admin password. Never the plaintext.
+      - key: ADMIN_PASSWORD_HASH
+        sync: false
+      # Exact URL of the deployed splitwise-pro-client static site, e.g.
+      # https://splitwise-pro-client.onrender.com — required so CORS does
+      # not fall back to its permissive local-dev default.
+      - key: CLIENT_ORIGIN
+        sync: false
+      # PORT and NODE_ENV are provided by Render automatically and must not
+      # be set here.
+
+  # Render Free Static Site — the built React/Vite/PWA client.
+  - type: web
+    name: splitwise-pro-client
+    env: static
+    rootDir: .
+    buildCommand: npm ci && npm run build --workspace client
+    staticPublishPath: client/dist
+    envVars:
+      # Exact URL of the deployed splitwise-pro-server web service, e.g.
+      # https://splitwise-pro-server.onrender.com/api. Vite inlines this at
+      # build time, so changing it later requires a rebuild, not a restart.
+      - key: VITE_API_BASE_URL
+        sync: false
+    routes:
+      # React Router (BrowserRouter) does client-side routing: any path that
+      # isn't a real static file (JS/CSS/manifest/icons/service worker) must
+      # fall back to index.html instead of 404ing.
+      - type: rewrite
+        source: /*
+        destination: /index.html

@@ -56,6 +56,17 @@ npm run format:check
 
 See `client/.env.example` and `server/.env.example` for the full list. Real secrets (admin password hash, Supabase credentials, database URL) must never be committed — only placeholders belong in the `*.env.example` files.
 
-## Deployment (planned)
+## Deployment
 
-The Express server is written as a conventional app (`server/src/index.ts` calling `app.listen`), which Vercel can deploy with zero configuration. The current plan is two independent Vercel projects against this repo — one rooted at `client/`, one rooted at `server/` — unless investigation at deploy time shows a simpler option. Nothing is deployed yet.
+Splitwise Pro deploys as two independent Render Free services against the existing Supabase Free PostgreSQL project — no Render Postgres, no paid tier, and no uptime-pinging workaround for free-tier sleep:
+
+```text
+GitHub (private repo)
+  -> Render Free Static Site   (React/Vite/PWA client, built from client/)
+  -> Render Free Web Service   (Express API, built from server/)
+  -> Supabase Free PostgreSQL  (existing project; DATABASE_URL only)
+```
+
+Both services build from the repo root using `--workspace` commands, since this is an npm-workspaces monorepo with a single root `package-lock.json`. See `render.yaml` at the repo root for the exact build/start commands, publish directory, SPA rewrite rule, and required environment variables — secrets are marked `sync: false` in that file and must be entered directly in the Render dashboard, never committed.
+
+Render Free Web Services sleep after inactivity, and Supabase Free pauses after prolonged inactivity; both produce a cold start on the next request. This is expected, accepted behavior for this private, personal-use app.

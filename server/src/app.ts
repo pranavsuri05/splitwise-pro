@@ -14,7 +14,13 @@ import { settlementsRouter } from './routes/settlements.routes.js'
 export function createApp(): Express {
   const app = express()
 
-  app.use(helmet())
+  // Phase 6: the client is deployed as a separate Render Static Site, a
+  // different origin from this API's Render Web Service. Helmet's default
+  // Cross-Origin-Resource-Policy is 'same-origin', which browsers enforce
+  // independently of the `cors` middleware below and would silently block
+  // the frontend from reading any response. All other Helmet protections
+  // are unchanged.
+  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }))
   app.use(cors({ origin: process.env.CLIENT_ORIGIN ?? true }))
   app.use(express.json())
 

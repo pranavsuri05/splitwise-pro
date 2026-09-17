@@ -14,6 +14,15 @@ describe('GET /api/health', () => {
   })
 })
 
+describe('Cross-Origin-Resource-Policy header', () => {
+  it('is set to cross-origin so the separately hosted static site can read API responses', async () => {
+    const app = createApp()
+    const response = await request(app).get('/api/health')
+
+    expect(response.headers['cross-origin-resource-policy']).toBe('cross-origin')
+  })
+})
+
 describe('unknown route', () => {
   it('returns a 404 in the standard error envelope', async () => {
     const app = createApp()
