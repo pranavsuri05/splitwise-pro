@@ -29,6 +29,11 @@ export default defineConfig({
         // served from the cache (Security_Specification.md §31,
         // System_Architecture.md §23).
         globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
+        // The full-resolution master logo (public/splitwise-pro-logo.png)
+        // is the source artwork the actual icon sizes are generated from —
+        // it's never loaded by the running app, so it's excluded here to
+        // avoid needlessly precaching an extra ~1.8MB.
+        globIgnores: ['splitwise-pro-logo.png'],
       },
     }),
   ],
