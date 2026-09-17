@@ -21,3 +21,9 @@ expensesRouter.delete(
   requireAdminPassword,
   asyncHandler(expensesController.deleteExpense),
 )
+expensesRouter.delete(
+  '/',
+  adminRateLimit,
+  requireAdminPassword,
+  asyncHandler(expensesController.clearAllExpenses),
+)

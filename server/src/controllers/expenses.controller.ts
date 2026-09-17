@@ -49,3 +49,9 @@ export async function deleteExpense(req: Request, res: Response): Promise<void> 
   await expensesService.deleteExpense(groupId, req.params.expenseId)
   res.status(204).end()
 }
+
+export async function clearAllExpenses(req: Request, res: Response): Promise<void> {
+  const groupId = await requireGroupId(req.params.groupId)
+  await expensesService.clearAllExpenses(groupId)
+  res.status(204).end()
+}

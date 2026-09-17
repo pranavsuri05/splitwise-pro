@@ -9,6 +9,7 @@ import { expensesRouter } from './routes/expenses.routes.js'
 import { groupsRouter } from './routes/groups.routes.js'
 import { healthRouter } from './routes/health.routes.js'
 import { peopleRouter } from './routes/people.routes.js'
+import { settlementsRouter } from './routes/settlements.routes.js'
 
 export function createApp(): Express {
   const app = express()
@@ -22,6 +23,7 @@ export function createApp(): Express {
   app.use('/api/groups/:groupId/categories', categoriesRouter)
   app.use('/api/groups/:groupId/expenses', expensesRouter)
   app.use('/api/groups/:groupId/balances', balancesRouter)
+  app.use('/api/groups/:groupId/settlements', settlementsRouter)
   app.use('/api/groups', groupsRouter)
 
   app.use(notFoundHandler)

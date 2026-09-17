@@ -1,6 +1,7 @@
-import type { Pool, PoolClient } from 'pg'
+import type { PoolClient } from 'pg'
 import { pool } from '../db/pool.js'
 import { withTransaction } from '../db/transaction.js'
+import { requireActivePersonInGroup, type Queryable } from './personGuards.js'
 import { ApiError } from '../utils/apiError.js'
 import { isUuid } from '../utils/uuid.js'
 import {
@@ -10,8 +11,6 @@ import {
   type ExpensePatch,
   type ShareInput,
 } from '../validators/expenses.js'
-
-type Queryable = Pool | PoolClient
 
 export interface ExpenseShareResponse {
   person_id: string
@@ -38,30 +37,6 @@ interface ExpenseRow {
   payer_name: string
   category_id: string | null
   category_name: string | null
-}
-
-async function requireActivePersonInGroup(
-  db: Queryable,
-  groupId: string,
-  personId: string,
-  fieldLabel: string,
-): Promise<void> {
-  if (!isUuid(personId)) {
-    throw new ApiError(404, 'PERSON_NOT_FOUND', `${fieldLabel} not found.`)
-  }
-
-  const { rows } = await db.query<{ is_active: boolean }>(
-    'SELECT is_active FROM people WHERE id = $1 AND group_id = $2',
-    [personId, groupId],
-  )
-
-  if (rows.length === 0) {
-    throw new ApiError(404, 'PERSON_NOT_FOUND', `${fieldLabel} not found.`)
-  }
-
-  if (!rows[0].is_active) {
-    throw new ApiError(422, 'INACTIVE_PERSON', `${fieldLabel} is not active.`)
-  }
 }
 
 async function requireCategoryInGroup(
@@ -316,5 +291,16 @@ export async function deleteExpense(groupId: string, expenseId: string): Promise
     if ((result.rowCount ?? 0) === 0) {
       throw new ApiError(404, 'EXPENSE_NOT_FOUND', 'Expense not found.')
     }
+  })
+}
+
+// PRD.md §11/12 + API_Design.md §20: "Clear All Transactions" removes every
+// expense (and, via the existing expense_shares.expense_id FK cascade, its
+// shares) but must never touch settlement history. `expense_shares.expense_id
+// ON DELETE CASCADE` already handles the share cleanup atomically as part of
+// this single statement.
+export async function clearAllExpenses(groupId: string): Promise<void> {
+  await withTransaction(async (client) => {
+    await client.query('DELETE FROM expenses WHERE group_id = $1', [groupId])
   })
 }
