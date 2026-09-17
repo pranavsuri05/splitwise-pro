@@ -1,0 +1,9 @@
+node_modules
+dist
+build
+coverage
+package-lock.json
+client/src/vite-env.d.ts
+
+# Pre-existing product specification documents — not reformatted by tooling.
+docs/
